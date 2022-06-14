@@ -1,0 +1,54 @@
+mode:
+  local:
+    # If the notebook is run directly outside a container
+    wh_credentials_path: credentials.yaml
+  container:
+    # If the notebook is run from a container as a sagemaker processing job
+    wh_credentials_path: /opt/ml/processing/config/credentials.yaml
+
+data:
+  # Ignores any data before this date. If not required, we can give it as None
+  min_date: '2021-06-01'
+
+  #Column name where table holds timestamp
+  timestamp_column_name: timestamp
+
+  #Primaray key column name
+  primary_key_column: domain
+
+  #Column name of the table where event type is stored
+  events_column_name: touch 
+
+  #Event type category column name
+  events_type_category_column_name: touch_category
+
+  #Call conversion time column name 
+  call_conversion_time_column_name: call_conversion_time
+
+  #Final columns to be selected
+  filter_columns: ["domain", "touch", "timestamp", "is_mql", "touch_category"]
+
+
+  # The input data may sometimes contain a touch that is not required and you choose to drop them. 
+  # Such touches should be added to this list. 
+  # If all touches should be considered, we can pass an empty list (ex: IGNORE_TOUCHES=[])
+  ignore_events: ["request-demo", "marketing_newsletter_sent", "marketing_campaign_sent", "marketing_newsletter_clicked", "marketing_campaign_clicked"]
+  
+  # We may want to combine a few touches into one group. Ex: all video ads from different sources may be combined into one.
+  # In such case, we make below flag True (else, False) and create a touchpoint_mapping dictionary (see below) to group related touch points together
+  group_events: True
+  
+  # This is required only if GROUP_TOUCHES: True. In below mapping, each key corresponds to a touch we want to group. 
+  # Ex, sources, directory, home etc are all converted to 'webapp' and video-library, guides, case-studies are converted to 'docs'
+  # If a touch is not found in the key, no modification is applied on that and it stays as is.
+  group_events_mapping:
+    webapp: ["", "sources", "directory", "destinations", "home", "syncs", "team"]
+    product: ["integration", "transformations"]
+    docs: ["video-library", "guides", "case-studies"]
+    join_slack: ["join-rudderstack-slack", "join-rudderstack-slack-community"]
+    null: ["others", "signup", "login", "profile", "rudderstack-vs-segment", "rudderstack-vs-snowplow"]
+  
+analysis:
+  # Dedup logic. IF same event repeats consecutively within this interval (in seconds), they are considered the same and first occurence timestamp is counted. 
+  # If we don't want a dedup logic, we can make this value as 0.
+  min_event_interval_in_sec: 300
