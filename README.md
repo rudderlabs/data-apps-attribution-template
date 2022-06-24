@@ -7,18 +7,9 @@
 
 1. Your event data is setup using RudderStack event stream to your warehouse 
 2. You have an aws account with a role that has [`AmazonSagemakerFullAccess`](https://docs.aws.amazon.com/sagemaker/latest/dg/security-iam-awsmanpol.html#security-iam-awsmanpol-AmazonSageMakerFullAccess) policy, and [write access](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_examples_s3_rw-bucket.html) to an s3 bucket. These details need to be updated in `credentials_template.yaml`. You should also add your aws [access key id/access key secret](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html) and an s3 bucket where the role has write access. 
-3. You built a feature table in your warehouse using either dbt or wht. The current template uses a [dbt project](https://github.com/rudderlabs/dbt-user-touchpoints) from where the feature store table is getting generated in snowflake. 
-4. Your warehouse credentials, the feature store table name, and the table where predictions should be written to are updated in the `credentials_template.yaml` file. The file should then be renamed to `credentials.yaml`. Currently, only Snowflake is supported.
-5. In the `config/data_prep_config.yaml`, following block needs to be updated with the label column and entity column. 
-
-```
-data:
-  columns:
-    # Label column name
-    label: converted
-    # Entity (unique key for the final features table formation), can be single or list of column names
-    entity: user
-```
+3. You built a user journey table in your warehouse using either dbt or wht. The current template uses a [dbt project](https://github.com/rudderlabs/dbt-user-touchpoints) from where the user journe table is getting generated in snowflake. 
+4. Your warehouse credentials, the user journey table name, and the table where predictions should be written to are updated in the `credentials_template.yaml` file. The file should then be renamed to `credentials.yaml`. Currently, only Snowflake is supported.
+5. In the `config/analysis_config.yaml`, the data block needs to be updated with the column names from warehouse.
 6. Install [anaconda](https://www.anaconda.com/products/distribution)
 7. [Optional] Install [docker](https://docs.docker.com/engine/install/). This is required only if you want to run the app locally and not as sagemaker processing job.
 
@@ -26,20 +17,34 @@ data:
 
 Run the following command from command line:
 
-> `sh full_pipeline.sh train ml.t3.xlarge <job_id>
+> `sh run_analysis.sh ml.t3.xlarge <job_id>
 
 The `<job_id>` accepts any number or string. Recommended values are current timestamp in epoch for job_id and an integer value 0/1 etc for train_id `ml.t3.xlarge` can be replaced by any valid [aws machine type](https://aws.amazon.com/sagemaker/pricing/). If the data size is large, you would need a larger machine.
 
 Once the job is complete, following files get generated under the data folder:
 ```
 data
-    job0
+    <job_id>
       multi_touch_attribution
         ..
         ..
         multi_touch_attribution.html
 ```
+Along with this, the attribution scores are also written in the warehouse. 
 
+## Scheduling the analysis:
+
+If you don't need to schedule the analysis at a set cadence, this section can be skipped. We use aws Lambda and EC2 for scheduling the analysis. 
+1. Set up EC2
+  1.1 Create an EC2 instance and copy all the files in this directory to the instance. Follow directions from below
+  1.2 Copy your aws credentials file (.aws/credentials) to the ec2 instance
+2. Create a lambda function that starts the ec2 instance, by copying the code in `lambda_start_ec2.py`. The lambda function should have a role that can start and stop ec2 instances.
+3. Create an [event bridge rule](https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-create-rule-schedule.html) that runs on a schedule and link the lambda function. This launches the ec2 instance at a given schedule every time. The schedule can be configurable based on whatever prediction schedule is desired.
+4. Start the ec2 instance and ssh into it (ssh -i <pem_file.pem> ec2-user:<ec2-public-dns>). Setup following in cron:
+  ```
+  #crontab -e
+  @reboot /home/ec2-user/predict_on_ec2.sh
+  ```
 5. Stop the instance. 
 
 With these steps, the predictions are scheduled on an ec2 instance at set frequency. The event bridge triggers lambda function at set frequency. The function then starts the ec2 instance. The cron task then runs the predict_on_ec2 job, which does the predictions, and then shuts off the instance once the prediction is done.
@@ -59,11 +64,8 @@ With these steps, the predictions are scheduled on an ec2 instance at set freque
   * `> scp -i my_file.pem -r * ec2-user@<my-ec2-public-dns>.us-east-2.compute.amazonaws.com:`
 4. Run the full pipeline command just as in local
 
-`sh full_pipeline.sh train ml.t3.xlarge <job_id>`
+> `sh run_analysis.sh ml.t3.xlarge <job_id>`
 
-5. If atleast one cycle of train is done, the script can be run in predict mode:
-
-`sh full_pipeline.sh predict ml.t3.xlarge <job_id> `
 
 
 ## Appendix:
