@@ -42,6 +42,13 @@ data:
   # Ex, sources, directory, home etc are all converted to 'webapp' and video-library, guides, case-studies are converted to 'docs'
   # If a touch is not found in the key, no modification is applied on that and it stays as is.
   group_events_mapping: null
+  # If not null, below is an example of the groupings:
+  # group_events_mapping:
+  #   webapp: ["", "sources", "directory", "destinations", "home", "syncs", "team"]
+  #   product: ["integration", "transformations"]
+  #   docs: ["video-library", "guides", "case-studies"]
+  #   join_slack: ["join-rudderstack-slack", "join-rudderstack-slack-community"]
+  #   null: ["others", "signup", "login", "profile", "rudderstack-vs-segment", "rudderstack-vs-snowplow"]
   
 analysis:
   # Dedup logic. IF same event repeats consecutively within this interval (in seconds), they are considered the same and first occurence timestamp is counted. 
