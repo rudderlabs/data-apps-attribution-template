@@ -90,7 +90,7 @@ if __name__ == "__main__":
                                          base_job_name=job_name,
                                          sagemaker_session=sagemaker_session)
     # Add all dependency files here
-    files = ["load_data.py", "utils.py"]
+    files = ["load_data.py", "utils.py", "models.py", "wh_connectors.py"]
 
     with zipfile.ZipFile("utils.zip", "w") as zipobj:
         for file in files:

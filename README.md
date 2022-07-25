@@ -2,13 +2,27 @@
 
 ## What it is:
 
+In this notebook (`multi_touch_attribution.ipynb`), we calculate multi-touch attribution values for a given set of channels using following methods:
+1. Shapley values - considering only positive conversions
+2. Markov chain values 
+3. First touch based
+4. Last touch based 
+
+* Shapley values code is implemented based on the logic presented in this [paper](https://arxiv.org/pdf/1804.05327.pdf)
+* Markov chain values are based on the following [whitepaper](https://www.channelattribution.net/pdf/Whitepaper.pdf)
 
 ## Prerequisites before building the model:
 
 1. Your event data is setup using RudderStack event stream to your warehouse 
 2. You have an aws account with a role that has [`AmazonSagemakerFullAccess`](https://docs.aws.amazon.com/sagemaker/latest/dg/security-iam-awsmanpol.html#security-iam-awsmanpol-AmazonSageMakerFullAccess) policy, and [write access](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_examples_s3_rw-bucket.html) to an s3 bucket. These details need to be updated in `credentials_template.yaml`. You should also add your aws [access key id/access key secret](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html) and an s3 bucket where the role has write access. 
-3. You built a user journey table in your warehouse using either dbt or wht. The current template uses a [dbt project](https://github.com/rudderlabs/dbt-user-touchpoints) from where the user journe table is getting generated in snowflake. 
-4. Your warehouse credentials, the user journey table name, and the table where predictions should be written to are updated in the `credentials_template.yaml` file. The file should then be renamed to `credentials.yaml`. Currently, only Snowflake is supported.
+3. You built a user journey table (or view) in your warehouse using either dbt or wht. The table should have following columns (it can have other columns too, but they will be ignored):
+```
+* primary_key_column -> user_id, domain etc. The main entity key
+* events_column_name -> touch points. Event_type, campaign_name, page_name etc
+* timestamp_column_name -> When the touch has occured
+
+``` 
+4. Your warehouse credentials, the user journey table name, and the table where predictions should be written to are updated in the `credentials_template.yaml` file. The file should then be renamed to `credentials.yaml`. Currently, only Snowflake and Redshift are supported.
 5. In the `config/analysis_config.yaml`, the data block needs to be updated with the column names from warehouse.
 6. Install [anaconda](https://www.anaconda.com/products/distribution)
 7. [Optional] Install [docker](https://docs.docker.com/engine/install/). This is required only if you want to run the app locally and not as sagemaker processing job.
@@ -91,3 +105,20 @@ With these steps, the predictions are scheduled on an ec2 instance at set freque
     > docker container start <container_id>
     
     > docker cp <container_id>://opt/ml/processing/output/filename . 
+
+
+## Change Log (14 Jul 2022):
+
+1. Take top n touch points, and group rest all as `others`
+2. Make each model independent, so if one fails, it doesn't need to impact others
+3. Add First touch to the results
+4. Add both normalized and denormalized distributions
+5. Input column name would require only three columns (the table _can_ have extra columns too and template can be modified to use them, but base template ignores these):
+
+```
+* primary_key_column -> user_id, domain etc. The main entity key
+* events_column_name -> touch points. Event_type, campaign_name, page_name etc
+* timestamp_column_name -> When the touch has occured
+
+```
+6. An extra input parameter, which tells what the conversion event is called as. Inside the notebook, all the events that occur after the first occurence of this event are ignored. This can be done within the warehouse table too, to reduce data and compute costs.
