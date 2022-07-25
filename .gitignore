@@ -130,3 +130,6 @@ dmypy.json
 credentials*.yaml
 !credentials_template.yaml
 *.zip
+.DS_Store
+
+nohup*

@@ -72,6 +72,7 @@ def read_csv_from_s3(s3_bucket,
     return pd.read_csv(StringIO(csv_string), header=header, index_col=index)
 
 
+
 def create_s3_resource(aws_cred_file_path: str):
     try:
         sm_role = sagemaker.get_execution_role()
@@ -118,37 +119,6 @@ def get_latest_folder(path:str, filter_substr:str=None) -> str:
     recent_folder_path = max(folder_paths, key=os.path.getctime)
     return recent_folder_path
 
-
-class SnowflakeConnector:
-    def __init__(self, credentials: dict) -> None:
-        self.credentials = credentials
-        url = f"snowflake://{credentials['user']}:{credentials['password']}@{credentials['account_identifier']}"
-        if 'database' in credentials:
-            url += f"/{credentials['database']}"
-            if 'schema' in credentials:
-                url += f"/{credentials['schema']}"
-                if 'warehouse' in credentials:
-                    url += f"?warehouse={credentials['warehouse']}"
-                    if 'role' in credentials:
-                        url += f"&role={credentials['role']}"
-        self.engine = create_engine(url)
-        self.connection = self.engine.connect()
-
-    def run_query(self, query) -> pd.DataFrame:
-        query_result = self.connection.execute(query)
-        df = pd.DataFrame(query_result.fetchall())
-        if len(df) > 0:
-            df.columns = query_result.keys()
-        else:
-            columns = query_result.keys()
-            df = pd.DataFrame(columns=columns)
-
-        return df
-
-    def close(self) -> None:
-        self.connection.close()
-        self.engine.dispose()
-    
 def load_config(file_path:str) -> dict:
     with open(file_path, "r") as f:
         config = yaml.safe_load(f)
