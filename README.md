@@ -15,7 +15,7 @@ In this notebook (`multi_touch_attribution.ipynb`), we calculate multi-touch att
 
 1. Your event data is setup using RudderStack event stream to your warehouse 
 2. You have an aws account with a role that has [`AmazonSagemakerFullAccess`](https://docs.aws.amazon.com/sagemaker/latest/dg/security-iam-awsmanpol.html#security-iam-awsmanpol-AmazonSageMakerFullAccess) policy, and [write access](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_examples_s3_rw-bucket.html) to an s3 bucket. These details need to be updated in `credentials_template.yaml`. You should also add your aws [access key id/access key secret](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html) and an s3 bucket where the role has write access. 
-3. You built a user journey table (or view) in your warehouse using either dbt or wht. The table should have following columns (it can have other columns too, but they will be ignored):
+3. You built a user journey table (or view) in your warehouse. The table should have following columns (it can have other columns too, but they will be ignored):
 ```
 * primary_key_column -> user_id, domain etc. The main entity key
 * events_column_name -> touch points. Event_type, campaign_name, page_name etc
